@@ -25,19 +25,84 @@ import javafx.scene.web.HTMLEditor;
 //import javafx.beans.binding.Bindings;
 //import javafx.scene.web.WebView;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.control.Button;
+
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import java.util.Optional;
+import javafx.scene.control.ButtonType;
+
 
 
 public class Adventure extends Application {
 
-    String initialEditview = "<html><head>"
-            + "</head><body contenteditable='true'>"
-            +"</body></html>";
+//Globals
 
+    /*    String initialEditview = "<html><head>"
+            + "</head><body contenteditable='true'>"
+            +"</body></html>";*/
+
+    List<StoryScene> sceneList = new ArrayList<StoryScene>();
+    
+    public class StoryScene {
+        String text;
+        String ID;
+        Map<String, String> childScenes = new HashMap<String,String>();
+//        List<String> childScenes = new ArrayList();
+        
+        public void addText(String newID, String sceneText) {
+            ID = newID;
+            text = sceneText;
+        }
+        
+        public void addChild(String action, String ID){
+            childScenes.put(action, ID);
+        }
+
+    }
+
+    //wrapper so I can modify a local variable within a handle.
+    static class SceneWrapper {
+       StoryScene value;
+
+       SceneWrapper(StoryScene storyscene) {
+           this.value = storyscene;
+       } 
+    }
+    
+    public int findListIndex(String ID) {
+        for( int i = 0; i < sceneList.size(); i++ )
+        {
+            if(sceneList.get(i).ID == ID ){
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+
+    
     public static void main(String[] args) {
         Application.launch(args);
     }
+    
+    
     @Override
     public void start(Stage primaryStage) {
+        
+        StoryScene currentscene = new StoryScene();
+        sceneList.add(currentscene);
+        int currentIndex = 0;
+        
+//        final SceneWrapper savedScene = new SceneWrapper(currentscene);
+
         //Initial setup
         primaryStage.setTitle("Choose Your Own Adventure Story Creator");
         Group root = new Group();
@@ -57,6 +122,7 @@ public class Adventure extends Application {
 //        textArea.setPromptText("Scene Text");
 //        textArea.setWrapText(true);
 
+
         //start from the top and work down.
 
         //Title
@@ -72,7 +138,8 @@ public class Adventure extends Application {
             .build();
 
         //Scene ID
-        TextField field;
+        //must be declared final to get value in the handle method below.
+        final TextField field;
         field = new TextField();
         field.setStyle("-fx-background-color: WHEAT;"
                     + "-fx-text-fill: BLACK;"
@@ -87,16 +154,15 @@ public class Adventure extends Application {
         border.setTop(titleBox);
 
         //Text Editor
-        HTMLEditor htmlEditor = new HTMLEditor();
-        htmlEditor.setPrefHeight(245);
+        HTMLEditor textEditor = new HTMLEditor();
+        textEditor.setPrefHeight(245);
 
-
-        htmlEditor.setStyle("-fx-background-color: DARKGRAY;"
+        textEditor.setStyle("-fx-background-color: DARKGRAY;"
                 + "-fx-text-fill: BLACK;"
-                + "-fx-font-size: 9pt;"
-        + "-fx-prompt-text-fill: derive(-fx-control-inner-background, -30%);");
+                + "-fx-font-size: 9pt;");
+//        + "-fx-prompt-text-fill: derive(-fx-control-inner-background, -30%);");
 
-        border.setCenter(htmlEditor);
+        border.setCenter(textEditor);
 
         
         
@@ -107,6 +173,7 @@ public class Adventure extends Application {
         splitPane2.prefWidthProperty().bind(scene.widthProperty());
         splitPane2.prefHeightProperty().bind(scene.heightProperty());
 
+        /*
         HBox centerArea = new HBox();
  
         final Text upperRight = TextBuilder.create()
@@ -118,7 +185,67 @@ public class Adventure extends Application {
             .translateY(50)
             .build();
         centerArea.getChildren().add(upperRight);
+        */
 
+        //Top right
+        VBox upperRight = new VBox();
+        
+        final Text optionsText = TextBuilder.create()
+            .text("Scene Options")
+//            .x(100)
+//            .y(50)
+             .fill(Color.BLACK)
+            .font(Font.font(null, FontWeight.BOLD, 12))
+//            .translateY(50)
+            .build();
+
+        upperRight.getChildren().add(optionsText);
+
+        HBox buttonRow = new HBox();
+
+        
+        
+        //SAVE SCENE
+        Button saveBtn = new Button("Save Text");
+                
+        saveBtn.setOnAction(new EventHandler<ActionEvent>() {
+ 
+            @Override
+            public void handle(ActionEvent event) {
+                StoryScene newscene = new StoryScene();
+                newscene.addText(field.getText(), textEditor.getHtmlText());
+                //wrapper so I can modify a local variable within a handle.
+//                savedScene.value = saveScene(savedScene.value, newscene);
+                saveScene(currentIndex, newscene);
+                //needs to be fixed to work with the list.
+
+            }
+        });
+        
+        //btn.setOnAction(e -> saveScene() );
+        buttonRow.getChildren().add(saveBtn);
+        
+        //NEW SCENE
+        Button newBtn = new Button("New Scene");
+        
+        newBtn.setOnAction(new EventHandler<ActionEvent>() {
+ 
+            @Override
+            public void handle(ActionEvent event) {
+            
+            }
+        });
+        
+        
+        
+        
+        
+        upperRight.getChildren().add(buttonRow);
+        
+        
+        
+        
+        //Lower right
         HBox rightArea = new HBox();
         
         final Text lowerRight = TextBuilder.create()
@@ -131,7 +258,9 @@ public class Adventure extends Application {
             .build();
         rightArea.getChildren().add(lowerRight);
 
-        splitPane2.getItems().add(centerArea);
+//        splitPane2.getItems().add(centerArea);
+
+        splitPane2.getItems().add(upperRight);
         splitPane2.getItems().add(rightArea);
 
         splitPane.getItems().add(border);
@@ -148,5 +277,80 @@ public class Adventure extends Application {
         
         primaryStage.setScene(scene);
         primaryStage.show();
-    }  
+    }
+    
+    public void saveScene(int index, StoryScene savedata)
+    {
+//                System.out.println("You clicked the button");
+//                if (field.getText() == null || field.getText().trim().isEmpty()) {
+        //DO NOT SAVE if the ID pane is empty.
+        System.out.format("Oldscene ID: %s   newscene ID: %s\n", sceneList.get(index).ID, savedata.ID);
+
+        if (savedata.ID.isEmpty() )
+        {
+            Alert alert = new Alert(AlertType.WARNING);
+            alert.setTitle("Warning");
+            alert.setHeaderText("The ID field is empty!");
+            alert.setContentText("The scene was not saved. "
+                    + "Please enter an ID in the field \"Scene ID / Short Title\". "
+                    + "This allows the program to connect this scene with other scenes.");
+            alert.showAndWait();
+        }  //The pane is not empty
+        else //if (sceneList.get(index).ID == null) 
+        {
+            int newindex = findListIndex(savedata.ID);
+            //If the scene is NOT in the scene list...
+            if (newindex == -1){
+                sceneList.get(index).addText(savedata.ID, savedata.text);
+            } //The scene IS in the scene list, and the user is about to overwrite it.
+            else {
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Alert");
+                alert.setHeaderText(null);
+                alert.setContentText("This scene ID already exists in the scene list. Overwrite?");
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.get() == ButtonType.OK){ 
+                    //YES overwrite.
+                    sceneList.get(index).addText(savedata.ID, savedata.text);
+                    sceneList.remove(newindex);
+                }
+                // ... if the user chose CANCEL or closed the dialog...do nothing.
+            }
+        }
+    System.out.format("Length of scene list: %d\n", sceneList.size() );
+    }
+        
+
+/*
+//Save a scene a second time with the SAME ID.
+        else if ( savedata.ID == sceneList.get(index).ID )
+        {
+            sceneList.get(index).addText(savedata.ID, savedata.text);
+        }//if the user CHANGED the scene ID.
+        else {
+            int oldIndex = findListIndex(sceneList.get(index).ID);
+            int newIndex = findListIndex(savedata.ID);
+            //If the scene is NOT in the scene list...
+            if (newIndex == -1){
+                sceneList.set(oldIndex, savedata);
+            } 
+            else {
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Alert");
+                alert.setHeaderText(null);
+                alert.setContentText("This scene ID already exists in the scene list. Overwrite?");
+                Optional<ButtonType> result = alert.showAndWait();
+
+                if (result.get() == ButtonType.OK){ 
+                    //YES overwrite.
+                    sceneList.set(oldIndex, savedata);
+                    sceneList.remove(newIndex);
+                }
+            }
+        }*/
+    
+    
+    
+    
+    
 }

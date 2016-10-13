@@ -37,7 +37,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import java.util.Optional;
 import javafx.scene.control.ButtonType;
-
+import javafx.scene.control.ButtonBar.ButtonData;
 
 
 public class Adventure extends Application {
@@ -68,11 +68,11 @@ public class Adventure extends Application {
     }
 
     //wrapper so I can modify a local variable within a handle.
-    static class SceneWrapper {
-       StoryScene value;
+    static class IndexWrapper {
+       int value;
 
-       SceneWrapper(StoryScene storyscene) {
-           this.value = storyscene;
+       IndexWrapper(int value) {
+           this.value = value;
        } 
     }
     
@@ -99,7 +99,8 @@ public class Adventure extends Application {
         
         StoryScene currentscene = new StoryScene();
         sceneList.add(currentscene);
-        int currentIndex = 0;
+        int index = 0;
+        IndexWrapper currentIndex = new IndexWrapper(index);
         
 //        final SceneWrapper savedScene = new SceneWrapper(currentscene);
 
@@ -154,7 +155,7 @@ public class Adventure extends Application {
         border.setTop(titleBox);
 
         //Text Editor
-        HTMLEditor textEditor = new HTMLEditor();
+        final HTMLEditor textEditor = new HTMLEditor();
         textEditor.setPrefHeight(245);
 
         textEditor.setStyle("-fx-background-color: DARKGRAY;"
@@ -164,7 +165,8 @@ public class Adventure extends Application {
 
         border.setCenter(textEditor);
 
-        
+//        textEditor.setHtmlText(INITIAL_TEXT);
+
         
         
         //now set up the right panes.
@@ -212,18 +214,20 @@ public class Adventure extends Application {
  
             @Override
             public void handle(ActionEvent event) {
+                System.out.format("currentText: %s\n", textEditor.getHtmlText() );
                 StoryScene newscene = new StoryScene();
                 newscene.addText(field.getText(), textEditor.getHtmlText());
                 //wrapper so I can modify a local variable within a handle.
-//                savedScene.value = saveScene(savedScene.value, newscene);
-                saveScene(currentIndex, newscene);
+                saveScene(currentIndex.value, newscene);
                 //needs to be fixed to work with the list.
 
             }
         });
-        
         //btn.setOnAction(e -> saveScene() );
         buttonRow.getChildren().add(saveBtn);
+        
+        
+        
         
         //NEW SCENE
         Button newBtn = new Button("New Scene");
@@ -232,12 +236,73 @@ public class Adventure extends Application {
  
             @Override
             public void handle(ActionEvent event) {
-            
+
+                
+                String savedText = new String();
+                if( sceneList.get(currentIndex.value).text != null )
+                { savedText = sceneList.get(currentIndex.value).text; }
+                
+                String newText = textEditor.getHtmlText();
+                
+                System.out.format("SavedText length: %s\n", savedText.length() );
+                System.out.format("NewText length: %s\n", newText.length() );
+                
+                if (newText.length() != 0 && newText.length() != 72) // if the scene is empty, do nothing.
+                {
+                    if( !(field.getText().isEmpty()) ) //check that there's text in ID field
+                    {
+                        if( savedText != newText )                   
+                        {
+                            
+                            Alert alert = new Alert(AlertType.CONFIRMATION);
+                            alert.setTitle("Alert");
+                            alert.setHeaderText(null);
+                            alert.setContentText("The current scene text has not been saved. Save scene?");
+                            ButtonType buttonYes = new ButtonType("Yes");
+                            ButtonType buttonNo = new ButtonType("No");
+                            ButtonType buttonCancel = new ButtonType("Cancel", ButtonData.CANCEL_CLOSE);
+                        
+                            alert.getButtonTypes().setAll(buttonYes, buttonNo, buttonCancel);
+                        
+                            Optional<ButtonType> result = alert.showAndWait();
+                            if (result.get() == buttonYes){
+                                StoryScene newscene = new StoryScene();
+                                newscene.addText(field.getText(), textEditor.getHtmlText());
+                                saveScene(currentIndex.value, newscene);                                
+                            } 
+                            if (result.get() == buttonYes || result.get() == buttonNo){
+                                StoryScene currentscene = new StoryScene();
+                                sceneList.add(currentscene);
+                                currentIndex.value = sceneList.size() - 1;
+                                textEditor.setHtmlText("");
+                                field.setText("");
+                            }
+                            //if they click Cancel I don't need any more code.
+                        } else { 
+                            StoryScene newScene = new StoryScene();
+                            sceneList.add(newScene);
+                            currentIndex.value = sceneList.size() - 1;
+                            textEditor.setHtmlText("");
+                            field.setText("");
+                        }
+                    }
+                    else
+                    {
+                        Alert alert = new Alert(AlertType.WARNING);
+                        alert.setTitle("Warning");
+                        alert.setHeaderText("The ID field is empty!");
+                        alert.setContentText("A new scene was not created. "
+                                + "You must type a scene ID for the current scene before a new scene can be created. "
+                                + "This allows the program to connect this scene with other scenes.");
+                        alert.showAndWait();
+                    }                    
+                }
+                System.out.format("Length of scene list: %d\n", sceneList.size() );
             }
         });
         
-        
-        
+        buttonRow.getChildren().add(newBtn);
+
         
         
         upperRight.getChildren().add(buttonRow);
@@ -284,8 +349,8 @@ public class Adventure extends Application {
 //                System.out.println("You clicked the button");
 //                if (field.getText() == null || field.getText().trim().isEmpty()) {
         //DO NOT SAVE if the ID pane is empty.
-        System.out.format("Oldscene ID: %s   newscene ID: %s\n", sceneList.get(index).ID, savedata.ID);
-
+//        System.out.format("Oldscene ID: %s   newscene ID: %s\n", sceneList.get(index).ID, savedata.ID);
+/*
         if (savedata.ID.isEmpty() )
         {
             Alert alert = new Alert(AlertType.WARNING);
@@ -298,7 +363,7 @@ public class Adventure extends Application {
         }  //The pane is not empty
         else //if (sceneList.get(index).ID == null) 
         {
-            int newindex = findListIndex(savedata.ID);
+*/          int newindex = findListIndex(savedata.ID);
             //If the scene is NOT in the scene list...
             if (newindex == -1){
                 sceneList.get(index).addText(savedata.ID, savedata.text);
@@ -316,8 +381,8 @@ public class Adventure extends Application {
                 }
                 // ... if the user chose CANCEL or closed the dialog...do nothing.
             }
-        }
-    System.out.format("Length of scene list: %d\n", sceneList.size() );
+//        }
+//    System.out.format("Length of scene list: %d\n", sceneList.size() );
     }
         
 

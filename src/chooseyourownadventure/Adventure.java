@@ -47,8 +47,8 @@ import javafx.stage.Popup;
 
 import javafx.stage.Screen; 
 import javafx.geometry.Rectangle2D; 
-//import javafx.scene.control.ScrollPane;
-//import java.util.concurrent.CompletableFuture; 
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ScrollPane.ScrollBarPolicy;
 //import java.nio.file.Path; 
 import javafx.scene.layout.StackPane; 
 import javafx.scene.web.WebView; 
@@ -61,6 +61,8 @@ import java.util.LinkedHashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import javafx.scene.layout.RowConstraints;
+import javafx.scene.layout.AnchorPane;
+
 
 public class Adventure extends Application {
 
@@ -429,16 +431,15 @@ public class Adventure extends Application {
         border.setTop(headerText);
         
         //Bottom Closebutton Row
-        HBox hbox1 = new HBox();
+        HBox bottomRow = new HBox();
         HBox hbox2 = new HBox();
         HBox.setHgrow(hbox2, Priority.ALWAYS);
-        hbox1.getChildren().add(hbox2);
+        bottomRow.getChildren().add(hbox2);
         Button closebutton = new Button("Close/Cancel");
         closebutton.setOnAction(e -> popupStage.close() );
-        hbox1.getChildren().add(closebutton);
+        bottomRow.getChildren().add(closebutton);
 
-        border.setBottom(hbox1);
-        
+//        border.setBottom(hbox1);
         Scene sc = new Scene(border, 300, 300);
         popupStage.setScene(sc);
         popupStage.show();
@@ -475,10 +476,20 @@ public class Adventure extends Application {
         popupStage.initStyle(StageStyle.UNDECORATED);
 
         BorderPane border = new BorderPane();
+        
+//        VBox vertical = new VBox();
 
+        Scene sc = new Scene(border, 300, 300);
+        
+//        border.prefHeightProperty().bind(sc.heightProperty());
+//        border.prefWidthProperty().bind(sc.widthProperty());
         border.setStyle( "-fx-border-color: black;\n"
-                + "-fx-border-width: 1;"
-                                        );
+                + "-fx-border-width: 1;");
+
+/*        
+        vertical.setStyle( "-fx-border-color: black;\n"
+                + "-fx-border-width: 1;");
+*/
         
         Text headerText = new Text();
         if(mode.equals("load"))
@@ -497,25 +508,38 @@ public class Adventure extends Application {
         }
         
         border.setTop(headerText);
-
+//        vertical.getChildren().add(headerText);
         //Bottom Closebutton Row
-        HBox hbox1 = new HBox();
+        //anchor.setTopAnchor(headerText,0.0);
+
+        HBox bottomRow = new HBox();
         HBox hbox2 = new HBox();
         HBox.setHgrow(hbox2, Priority.ALWAYS);
-        hbox1.getChildren().add(hbox2);
+        bottomRow.getChildren().add(hbox2);
         Button closebutton = new Button("Close/Cancel");
         closebutton.setOnAction(e -> popupStage.close() );
-        hbox1.getChildren().add(closebutton);
+        bottomRow.getChildren().add(closebutton);
 
-//        Region region = new Region();
+        border.setBottom(bottomRow);
+//        anchor.setBottomAnchor(bottomRow, 10.0);
+
+
+//        GridPane sceneChooser = new GridPane();
+        ScrollPane scroll = new ScrollPane();
+        VBox sceneChooser = new VBox();
+        scroll.setContent(sceneChooser);
+        scroll.setHbarPolicy(ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollBarPolicy.ALWAYS);
+        //scroll.setFitToHeight(true);
+        scroll.setFitToWidth(true);
+        scroll.setMaxHeight(100);
+        //        border.setBottom(hbox1);
 
         
-        border.setBottom(hbox1);
+//        Scene sc = new Scene(anchor, 300, 300);
 
-//        sceneChooser.add(closebutton,1,1);
-
-        GridPane sceneChooser = new GridPane();
-//        sceneChooser.setPadding(new Insets(5));
+//        vertical.prefHeightProperty().bind(sc.heightProperty());
+        
         
         sceneChooser.setStyle("    -fx-background-color: WHEAT ;\n"
                                    + "    -fx-padding: 5 ;\n"
@@ -533,6 +557,10 @@ public class Adventure extends Application {
         
         for (int index = 0; index < sceneList.size(); index++) {
 
+            HBox row = new HBox();
+            sceneChooser.getChildren().add(row);
+            row.setAlignment(Pos.CENTER_LEFT);
+            
             Button selection = new Button( sceneList.get(index).ID );
 
             class valueHolder { int value = -1 ; }
@@ -560,7 +588,7 @@ public class Adventure extends Application {
               }
             });
             
-            sceneChooser.add(selection, 2, index);
+            row.getChildren().add(selection);
             
             String strippedText = sceneList.get(index).text.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", " ");
 
@@ -589,15 +617,17 @@ public class Adventure extends Application {
                     .build();    
             }
             
-            sceneChooser.add(sceneText, 4, index);
+            row.getChildren().add(sceneText);
         }
-
-        
         
         border.setCenter(sceneChooser);
+//        vertical.getChildren().add(sceneChooser);
+
+//        vertical.getChildren().add(bottomRow);
         
-        Scene sc = new Scene(border, 300, 300);
-        
+//        anchor.setTopAnchor(sceneChooser,10.0);
+
+
         popupStage.setScene(sc);
 
 /*        popupStage.focusedProperty().addListener(new ChangeListener<Boolean>() {
@@ -613,15 +643,10 @@ public class Adventure extends Application {
         popupStage.show();
     }
     
-
-
     
     
     public void loadButton(int newIndex, Stage primaryStage)
     {
-        
-//        if( newIndex != currentIndex && newIndex != -1) //Ensures it's a different scene,
-//        {                                               //and that it exists.
             String savedText = sceneList.get(currentIndex).text;                    
             String newText = textEditor.getHtmlText();
             
@@ -645,52 +670,6 @@ public class Adventure extends Application {
             }
             else if ( !(savedText.equals(newText))  ) 
             {
-                if( IDfield.getText().isEmpty() ) //check that there's text in ID field
-                {
-                    Alert alert = new Alert(AlertType.CONFIRMATION);
-                    alert.setTitle("Alert");
-                    alert.setHeaderText(null);
-                    alert.setContentText("The current scene text has not been saved, and the ID field is empty.");
-                    ButtonType buttonDiscard = new ButtonType("Discard Current Scene and Continue");
-                    ButtonType addID = new ButtonType("Add ID and Continue");
-                    ButtonType buttonCancel = new ButtonType("Cancel");
-    //                ButtonType buttonCancel = new ButtonType("Cancel", ButtonData.CANCEL_CLOSE);
-            
-                    alert.getButtonTypes().setAll(buttonDiscard, buttonCancel);
-
-                    Optional<ButtonType> result = alert.showAndWait();
-                    if (result.get() == buttonDiscard){
-                        //Discard scene
-                        sceneList.remove(currentIndex);
-                    }
-                    if (result.get() == addID)
-                    {
-                        //IDfield.setText( persistentGetNewID() );
-                        persistentGetNewID();
-                    }
-                    if (result.get() == addID || result.get() == buttonDiscard)
-                    {
-                        currentIndex = newIndex;
-                        IDfield.setText(sceneList.get(newIndex).ID );
-                        textEditor.setHtmlText(sceneList.get(newIndex).text);                        
-                        setChildArea(primaryStage);                        
-                    }
-                    //no code needed to cancel.
-                }
-                else  //if there IS text in the ID field...
-                {
-                    Alert alert = new Alert(AlertType.CONFIRMATION);
-                    alert.setTitle("Alert");
-                    alert.setHeaderText(null);
-                    alert.setContentText("The current scene text has not been saved. Save scene?");
-                    ButtonType buttonYes = new ButtonType("Yes");
-                    ButtonType buttonNo = new ButtonType("No");
-                    ButtonType buttonCancel = new ButtonType("Cancel", ButtonData.CANCEL_CLOSE);
-            
-                    alert.getButtonTypes().setAll(buttonYes, buttonNo, buttonCancel);
-            
-                    Optional<ButtonType> result = alert.showAndWait();
-                    if (result.get() == buttonYes){
                         saveScene();                                
 
                         //and load the new scene...
@@ -698,20 +677,7 @@ public class Adventure extends Application {
                         IDfield.setText(sceneList.get(newIndex).ID );
                         textEditor.setHtmlText(sceneList.get(newIndex).text);                        
                         setChildArea(primaryStage);
-                    } 
-                    if (result.get() == buttonNo){
-
-                        // discard the current scene and load the new scene...
-                        sceneList.remove(currentIndex);
-                        currentIndex = newIndex;
-                        IDfield.setText(sceneList.get(newIndex).ID );
-                        textEditor.setHtmlText(sceneList.get(newIndex).text);                        
-                        setChildArea(primaryStage);
-                    }
-                    //if they click Cancel I don't need any more code.
-                }
             }
-//        }        
         System.out.format("Length of scene list: %d\n", sceneList.size() );
     }
     
@@ -729,30 +695,9 @@ public class Adventure extends Application {
         {
             if( !(savedText.equals(newText))  )   //scene is not saved
             {
-                Alert alert = new Alert(AlertType.CONFIRMATION);
-                alert.setTitle("Alert");
-                alert.setHeaderText(null);
-                alert.setContentText("The current scene text has not been saved. Save scene?");
-                ButtonType buttonYes = new ButtonType("Yes");
-                ButtonType buttonNo = new ButtonType("No");
-                ButtonType buttonCancel = new ButtonType("Cancel", ButtonData.CANCEL_CLOSE);
-                        
-                alert.getButtonTypes().setAll(buttonYes, buttonNo, buttonCancel);
-                        
-                Optional<ButtonType> result = alert.showAndWait();
-                if (result.get() == buttonYes){
-                    if(IDfield.getText().isEmpty())
-                    {  persistentGetNewID();  }
-
-                    saveScene();                                
-                } 
-                if (result.get() == buttonYes || result.get() == buttonNo){
-                    createScene(primaryStage);
-                }
-                //if they click Cancel I don't need any more code.
-            } else {   //scene is saved. Proceed.
+                saveScene();
+            }  //scene is saved. Proceed.
                 createScene(primaryStage);
-            }
         }
         System.out.format("Length of scene list: %d\n", sceneList.size() );
     }
@@ -799,12 +744,6 @@ public class Adventure extends Application {
 
         int newindex = findListIndex(IDfield.getText());
         System.out.format("newindex: %d  currentIndex: %d", newindex, currentIndex);
-        //If the scene is NOT in the scene list...
-//        if ( (newindex != -1 && newindex != currentIndex) || IDfield.getText().isEmpty() )
-        if(newindex != -1 && newindex != currentIndex) //e.g. the scene ID already exists...
-        {
-            persistentGetNewID();
-        }
 
         sceneList.get(currentIndex).addText(IDfield.getText(), textEditor.getHtmlText());
     }

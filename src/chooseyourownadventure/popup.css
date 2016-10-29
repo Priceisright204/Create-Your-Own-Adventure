@@ -1,0 +1,21 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Oct 29, 2016, 2:29:13 PM
+    Author     : Kevin
+*/
+
+.sceneChooser *.scroll-bar:horizontal *.increment-arrow,
+.sceneChooser *.scroll-bar:horizontal *.decrement-arrow,
+.sceneChooser *.scroll-bar:horizontal *.increment-button,
+.sceneChooser *.scroll-bar:horizontal *.decrement-button {
+    -fx-padding:0;
+    -fx-background-color: null;
+    -fx-background-radius: 0;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+    -fx-shape: null;
+}

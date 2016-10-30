@@ -65,11 +65,16 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.AnchorPane;
- import javafx.stage.WindowEvent;
+import javafx.stage.WindowEvent;
 
-
+import javafx.scene.control.Dialog;
 import java.util.Arrays;
-
+import javafx.util.Pair;
+import javafx.scene.Node;
+import javafx.application.Platform;
+import javafx.scene.control.TextFormatter;
+import javafx.util.converter.IntegerStringConverter;
+import javafx.beans.binding.Bindings;
 
 
 public class Adventure extends Application {
@@ -128,7 +133,7 @@ public class Adventure extends Application {
     public int currentIndex = 0;
 //    GridPane childGrid = new GridPane();
     ObservableList<String> childList = FXCollections.<String>observableArrayList();
-    public int childSelection = -1;
+    public String childSelection;
     
     @Override
     public void start(Stage primaryStage) {
@@ -300,6 +305,9 @@ public class Adventure extends Application {
         Text emptySpace = TextBuilder.create().text("   ").build();
         Vgrowbox.getChildren().add(emptySpace);
         
+        
+        
+        
         //Label for Child Scenes Area
         HBox labelBox = new HBox();
         
@@ -315,6 +323,10 @@ public class Adventure extends Application {
         HBox.setHgrow(Hgrowbox, Priority.ALWAYS);
         labelBox.getChildren().add(Hgrowbox);
 
+        //EDIT LINK
+        Button editLink = new Button("Edit Link");
+        editLink.setOnAction(e -> editChild(primaryStage) );
+        labelBox.getChildren().add(editLink);
 
 
 
@@ -334,11 +346,9 @@ public class Adventure extends Application {
 	            final String oldvalue, final String newvalue) 
 	    {
 
-                List<String> myList = new ArrayList<String>(Arrays.asList(newvalue.split(" ")));
-                int sceneNumber = Integer.parseInt(myList.get(0)) - 1;
-                
-                loadButton(sceneNumber,primaryStage);                
-                childSelection = sceneNumber;
+                //List<String> myList = new ArrayList<String>(Arrays.asList(newvalue.split(" ")));
+                //int sceneNumber = Integer.parseInt(myList.get(0)) - 1;
+                childSelection = newvalue.substring( newvalue.indexOf(":") + 2);
           }});
         
 //        upperRight.getChildren().add(childGrid);
@@ -383,33 +393,13 @@ public class Adventure extends Application {
     public void setChildArea(Stage primaryStage)
     {
         childList.clear();
-        childSelection = -1;
+        childSelection = null;
         
-//        childGrid.getChildren().clear();
-/*        childGrid.setStyle("    -fx-background-color: WHEAT ;\n"
-                                   + "    -fx-padding: 5 ;\n"
-                + "-fx-border-color: black;\n"
-                + "-fx-background-insets: 0,1,2;\n"
-                + "-fx-border-width: 3;\n"
-                                            ); */
+        Iterator< Entry<String,Integer> > itr = sceneList.get(currentIndex).childScenes.entrySet().iterator();
 
-/*        if(sceneList.get(currentIndex).childScenes.size() == 0)
-        {
-            Text noScenes = TextBuilder.create()
-                .text("No Connected Scenes")
-                .fill(Color.BLUE)
-                .font(Font.font(null, FontWeight.NORMAL, 12))
-                .build();
-            childGrid.add(noScenes, 1, 1);
-        }
-        else
-        {*/
-//          int index = 0;
-          Iterator< Entry<String,Integer> > itr = sceneList.get(currentIndex).childScenes.entrySet().iterator();
-
-          for (int index = 0; index < sceneList.get(currentIndex).childScenes.size(); index++)
+        for (int index = 0; index < sceneList.get(currentIndex).childScenes.size(); index++)
 //          while( itr.hasNext() )
-          {
+        {
 //            index += 1;
             Entry<String,Integer> entry = itr.next();
             String key = entry.getKey();
@@ -418,8 +408,6 @@ public class Adventure extends Application {
 //            childList.add( Integer.toString(childIndex) + " " + sceneList.get(index).text.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", " ") );
             childList.add( Integer.toString(childIndex + 1) + " : " + key );
 
-//                  editChild(key, primaryStage);
-           
             /*
             Text childID = new Text();
             childID = TextBuilder.create()
@@ -428,48 +416,88 @@ public class Adventure extends Application {
                     .font(Font.font(null, FontWeight.NORMAL, 12))
                     .build();
             */
-            
-          }
         }
+    }
     
-    public void editChild(String key, Stage primaryStage)
+    public void editChild(Stage primaryStage)
     {
-        //Popup
-        Stage popupStage = new Stage();
-        popupStage.initOwner(primaryStage);
-        popupStage.initStyle(StageStyle.UNDECORATED);
+      if(childSelection != null)
+      { 
+          
+        // Create the custom dialog.
+        Dialog<Pair<String, String>> dialog = new Dialog<>();
+        dialog.setTitle("Edit Child Link");
+        dialog.setHeaderText("Edit Child Link");
 
-        BorderPane border = new BorderPane();
+        // Set the button types.
+        ButtonType submitButton = new ButtonType("Change Link / OK", ButtonData.OK_DONE);
+        ButtonType delete = new ButtonType("Delete Link");
+        dialog.getDialogPane().getButtonTypes().addAll(submitButton, delete, ButtonType.CANCEL);
 
-        border.setStyle( "-fx-border-color: black;\n"
-                + "-fx-border-width: 1;"
-                                        );
-        Text headerText = TextBuilder.create()
-            .text("Edit Or Remove Child Link")
-            .fill(Color.BLUE)
-            .font(Font.font(null, FontWeight.NORMAL, 16))
-            .build();
-
-        border.setTop(headerText);
+        // Create the labels and fields.
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
         
-        //Bottom Closebutton Row
-        HBox bottomRow = new HBox();
-        HBox hbox2 = new HBox();
-        HBox.setHgrow(hbox2, Priority.ALWAYS);
-        bottomRow.getChildren().add(hbox2);
-        Button closebutton = new Button("Close/Cancel");
-        closebutton.setOnAction(e -> popupStage.close() );
-        bottomRow.getChildren().add(closebutton);
-
-//        border.setBottom(hbox1);
-        Scene sc = new Scene(border, 300, 300);
-
-
-        popupStage.setScene(sc);
-        popupStage.show();
+        TextField action = new TextField();
+        action.setPromptText("Action Text");
+        TextField sceneNumber = new TextField();
+        sceneNumber.setPromptText("Scene Number");
         
-        //refresh the list of child scenes
+        grid.add(new Label("Action Text:"), 0, 0);
+        grid.add(action, 1, 0);
+        grid.add(new Label("Scene Number:"), 0, 1);
+        grid.add(sceneNumber, 1, 1);
+
+        final TextFormatter<Integer> formatter = new TextFormatter<>(new IntegerStringConverter());
+        sceneNumber.setTextFormatter(formatter);
+        
+        action.setText(childSelection);
+        formatter.setValue( sceneList.get(currentIndex).childScenes.get(childSelection) + 1 );
+        
+        
+        // Enable/Disable login button depending on whether a username was entered.
+        Node loginButton = dialog.getDialogPane().lookupButton(submitButton);
+        loginButton.setDisable(true);
+
+        // Do some validation (using the Java 8 lambda syntax).
+        action.textProperty().addListener((observable, oldValue, newValue) -> {
+            loginButton.setDisable(newValue.trim().isEmpty());  });
+        sceneNumber.textProperty().addListener((observable, oldValue, newValue) -> {
+            loginButton.setDisable(newValue.trim().isEmpty() || Integer.parseInt(newValue) > sceneList.size() || Integer.parseInt(newValue) <= 0); });
+
+        
+        dialog.getDialogPane().setContent(grid);
+
+        // Request focus on the username field by default.
+        Platform.runLater(() -> action.requestFocus());
+        
+        // Convert the result to a key-value-pair when the OK button is clicked.
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == submitButton) {
+                return new Pair<>(action.getText(), sceneNumber.getText() );
+            }
+            if (dialogButton == delete)
+            {
+                sceneList.get(currentIndex).childScenes.remove(childSelection);
+                return null;
+            }
+            return null;
+        });
+
+        Optional<Pair<String, String>> result = dialog.showAndWait();
+
+        result.ifPresent(keyvalue -> {
+            sceneList.get(currentIndex).childScenes.remove(childSelection);
+            sceneList.get(currentIndex).addChild(keyvalue.getKey(), Integer.parseInt(keyvalue.getValue())-1 );
+            System.out.println("Action Text=" + keyvalue.getKey() + ", Scene Number=" + keyvalue.getValue());
+        });
+
+        
+        
         setChildArea(primaryStage);
+      }
     }
     
     

@@ -75,8 +75,16 @@ import javafx.application.Platform;
 import javafx.scene.control.TextFormatter;
 import javafx.util.converter.IntegerStringConverter;
 import javafx.beans.binding.Bindings;
-
-
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import com.sun.javafx.scene.web.skin.HTMLEditorSkin;
+import javafx.scene.control.RadioButton;
+import javafx.scene.control.ToggleGroup;
+import javafx.beans.value.ChangeListener;
+import javafx.scene.control.Toggle;
+//import javafx.util.StringConverter;
+//import javafx.util.converter.ShortStringConverter;
+ 
 public class Adventure extends Application {
 
 
@@ -129,18 +137,21 @@ public class Adventure extends Application {
     //Globals
     List<StoryScene> sceneList = new ArrayList<StoryScene>();
     public TextField IDfield;
+        
     public HTMLEditor textEditor;
     public int currentIndex = 0;
 //    GridPane childGrid = new GridPane();
     ObservableList<String> childList = FXCollections.<String>observableArrayList();
     public String childSelection;
+    public String toggleValue = "#";
+    
     
     @Override
     public void start(Stage primaryStage) {
         
         StoryScene currentscene = new StoryScene();
         sceneList.add(currentscene);
-
+        
         //Initial setup
         primaryStage.setTitle("Choose Your Own Adventure Story Creator");
         Group root = new Group();
@@ -188,7 +199,25 @@ public class Adventure extends Application {
                     + "-fx-font-size: 11pt;"
         + "-fx-prompt-text-fill: derive(-fx-control-inner-background, -30%);");
         IDfield.setPromptText("Scene ID / Short Title");
-//        IDfield.setAlignment(Pos.CENTER_RIGHT); //Not what I was looking for.
+        
+        /*  //prevent users from entering duplicate Scene ID's.
+        //this one listens for every character you type. It's a bit annoying. If duplicate, erase the last character you typed.
+        IDfield.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(findListIndex(newValue)!=-1 && findListIndex(newValue)!=currentIndex)
+            {
+                IDfield.setText(oldValue);
+            }
+        });*/
+
+        //Prevent users from entering duplicate Scene ID's.
+        //Runs when the focus changes. If it's a duplicate, set the ID to the scene #.
+        IDfield.focusedProperty().addListener((ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) -> {
+            String newString = IDfield.getText();
+            if(findListIndex(newString)!=-1 && findListIndex(newString)!=currentIndex)
+            {
+                IDfield.setText(Integer.toString(currentIndex + 1));
+            }
+        });
 
         titleBox.setLeft(upperLeft);
         titleBox.setRight(IDfield);
@@ -205,7 +234,6 @@ public class Adventure extends Application {
 //        + "-fx-prompt-text-fill: derive(-fx-control-inner-background, -30%);");
 
         border.setCenter(textEditor);
-
 //        textEditor.setHtmlText(INITIAL_TEXT);
 
         
@@ -287,16 +315,50 @@ public class Adventure extends Application {
             }
         });
         buttonRow1.getChildren().add(addChild);
-
-        
-        
         
         upperRight.getChildren().add(buttonRow1);
-        
-        HBox buttonRow2 = new HBox();
-        
+
+
         //Empty Button Row
+        HBox buttonRow2 = new HBox();
         upperRight.getChildren().add(buttonRow2);
+        
+        //Radio Buttons
+        final ToggleGroup group = new ToggleGroup();
+
+        RadioButton rb1 = new RadioButton("Connect scenes by scene number");
+        rb1.setToggleGroup(group);
+        rb1.setSelected(true);
+        rb1.setUserData("#");
+
+        RadioButton rb2 = new RadioButton("Connect scenes by ID");
+        rb2.setToggleGroup(group);
+        rb2.setUserData("ID");
+        upperRight.getChildren().add(rb1);
+        upperRight.getChildren().add(rb2);
+
+        //give the radio buttons some space.
+        rb1.setStyle( "-fx-padding: 0 0 0 20;");
+        rb2.setStyle( "-fx-padding: 0 0 0 20;");
+
+        //update the global setting variable when the toggle changes.
+        group.selectedToggleProperty().addListener(new ChangeListener<Toggle>() {
+          public void changed(ObservableValue<? extends Toggle> ov,
+                Toggle old_toggle, Toggle new_toggle) {
+            if (group.getSelectedToggle() != null) {
+                System.out.println(group.getSelectedToggle().getUserData().toString());
+                toggleValue = group.getSelectedToggle().getUserData().toString();
+
+                if(toggleValue == "#")
+                {  IDfield.setEditable(false);  }
+                if(toggleValue == "ID")
+                {  IDfield.setEditable(true);  }
+            }
+      }
+    });
+    
+        
+        
         
         //Empty Space
         VBox Vgrowbox = new VBox();
@@ -307,10 +369,10 @@ public class Adventure extends Application {
         
         
         
-        
-        //Label for Child Scenes Area
+        //Row containing label and "Edit Link" button
         HBox labelBox = new HBox();
         
+        //Label for Child Scenes Area        
         Text childText = TextBuilder.create()
             .text("Child Scenes")
             .fill(Color.BLACK)
@@ -387,6 +449,21 @@ public class Adventure extends Application {
         
         primaryStage.setScene(scene);
         primaryStage.show();
+        
+        //set focus on HTMLEditor
+        final WebView view = (WebView) ((GridPane)((HTMLEditorSkin)textEditor.getSkin()).getChildren().get(0)).getChildren().get(2);
+
+            Platform.runLater(() -> {
+            view.fireEvent(new MouseEvent(MouseEvent.MOUSE_PRESSED, 100, 100, 200, 200, MouseButton.PRIMARY, 1, false, false, false, false, false, false, false, false, false, false, null));
+            textEditor.requestFocus();
+            view.fireEvent(new MouseEvent(MouseEvent.MOUSE_RELEASED, 100, 100, 200, 200, MouseButton.PRIMARY, 1, false, false, false, false, false, false, false, false, false, false, null));
+        });
+
+            
+        IDfield.setEditable(false);
+
+        sceneList.get(currentIndex).ID = Integer.toString(currentIndex + 1);
+        
     }
     
 
@@ -450,10 +527,10 @@ public class Adventure extends Application {
         grid.add(new Label("Scene Number:"), 0, 1);
         grid.add(sceneNumber, 1, 1);
 
-        final TextFormatter<Integer> formatter = new TextFormatter<>(new IntegerStringConverter());
-        sceneNumber.setTextFormatter(formatter);
-        
         action.setText(childSelection);
+        
+        final TextFormatter<Integer> formatter = new TextFormatter<>(new IntegerStringConverter());
+        sceneNumber.setTextFormatter(formatter);        
         formatter.setValue( sceneList.get(currentIndex).childScenes.get(childSelection) + 1 );
         
         
@@ -711,7 +788,7 @@ public class Adventure extends Application {
             {
                 saveScene();
             }  //scene is saved. Proceed.
-                createScene(primaryStage);
+            createScene(primaryStage);
         }
         System.out.format("Length of scene list: %d\n", sceneList.size() );
     }
@@ -746,8 +823,9 @@ public class Adventure extends Application {
         StoryScene currentscene = new StoryScene();  //create a new scene
         sceneList.add(currentscene);
         currentIndex = sceneList.size() - 1;
+        sceneList.get(currentIndex).ID = Integer.toString(currentIndex + 1);
         textEditor.setHtmlText("");
-        IDfield.setText("");
+        IDfield.setText(sceneList.get(currentIndex).ID);
         setChildArea(primaryStage);
     }
     

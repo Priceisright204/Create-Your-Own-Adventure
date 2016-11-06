@@ -70,7 +70,7 @@ import javafx.stage.WindowEvent;
 import javafx.scene.control.Dialog;
 import java.util.Arrays;
 import javafx.util.Pair;
-import javafx.scene.Node;
+//import javafx.scene.Node;  //conflicts. Referring to it by full name.
 import javafx.application.Platform;
 import javafx.scene.control.TextFormatter;
 import javafx.util.converter.IntegerStringConverter;
@@ -89,7 +89,19 @@ import java.awt.Desktop;
 import java.nio.charset.StandardCharsets; 
 import java.nio.file.Files; 
 import java.nio.file.Paths;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+//import org.w3c.dom.*;
+import org.dom4j.*;
+//import org.dom4j.Document;
+//import org.dom4j.DocumentException;
+import org.dom4j.io.SAXReader;
+import java.util.*;
+import org.jaxen.*;
+
+//import javax.xml.parsers.*;
+//import org.xml.sax.SAXException;
 
 
 public class Adventure extends Application {
@@ -150,8 +162,8 @@ public class Adventure extends Application {
 //    GridPane childGrid = new GridPane();
     ObservableList<String> childList = FXCollections.<String>observableArrayList();
     public String childSelection; //the action key that is selected.
-    public String toggleValue = "#";
-    
+//    public String toggleValue = "#";
+    File file;
     
     @Override
     public void start(Stage primaryStage) {
@@ -331,9 +343,9 @@ public class Adventure extends Application {
         Text emptySpace = TextBuilder.create().text("   ").build();
         upperRight.getChildren().add(emptySpace);        
 
-        //Row containing options label and "Connect Child" button
-        HBox labelBox1 = new HBox();
-        
+        //Row containing child options label
+        //HBox labelBox1 = new HBox();
+        /*
         final Text childOptions = TextBuilder.create()
             .text("Child Scene Options")
 //            .x(100)
@@ -342,12 +354,13 @@ public class Adventure extends Application {
             .font(Font.font(null, FontWeight.BOLD, 14))
 //            .translateY(50)
             .build();
-
-        labelBox1.getChildren().add(childOptions);
+        
+//        labelBox1.getChildren().add(childOptions);
         
         HBox Hgrowbox0 = new HBox();
         HBox.setHgrow(Hgrowbox0, Priority.ALWAYS);
         labelBox1.getChildren().add(Hgrowbox0);
+        */
         
 //        upperRight.getChildren().add(childOptions);
                 
@@ -355,7 +368,7 @@ public class Adventure extends Application {
 //        HBox buttonRow2 = new HBox();        
         
         //CONNECT CHILD
-        Button addChild = new Button("Connect Child");
+        Button addChild = new Button("Connect Child Scene");
         //Makes sure the scene isn't empty before connecting anything.
         addChild.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -377,13 +390,13 @@ public class Adventure extends Application {
             }
         });
 
-        labelBox1.getChildren().add(addChild);
+        upperRight.getChildren().add(addChild);
         
-        upperRight.getChildren().add(labelBox1);
+//        upperRight.getChildren().add(labelBox1);
 
  
         
-        
+/*        
         //Radio Buttons
         final ToggleGroup group = new ToggleGroup();
 
@@ -393,6 +406,7 @@ public class Adventure extends Application {
         rb1.setUserData("#");
 
         RadioButton rb2 = new RadioButton("Connect scenes by ID");
+
         rb2.setToggleGroup(group);
         rb2.setUserData("ID");
         upperRight.getChildren().add(rb1);
@@ -418,7 +432,7 @@ public class Adventure extends Application {
             }
       }
     });
-
+*/
         
         
         //Empty Row
@@ -442,36 +456,42 @@ public class Adventure extends Application {
         saveall.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-                saveScene(); //first update the values in memory for the current scene!
-                
-                FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle("Save Image");
-                File file = fileChooser.showSaveDialog(primaryStage);
-
-                saveFile(file);
+                if(file == null)
+                {
+                    saveButton(primaryStage);
+                }
+                else
+                {
+                    saveFile();
+                }
             }
         });
         globalRow.getChildren().add(saveall);
+        
+        Button savenew = new Button("Save As");
+        savenew.setOnAction(e -> saveButton(primaryStage) );
+
+        globalRow.getChildren().add(savenew);
         
         
         Button loadall = new Button("Load");
         loadall.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-
                 FileChooser fileChooser = new FileChooser();
                 fileChooser.setTitle("Open Resource File");
                 
-                FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Story Files (*.story)", "*.story");
+                FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Story File (*.story)", "*.story");
                 fileChooser.getExtensionFilters().add(extFilter);
                 
 //                fileChooser.showOpenDialog(primaryStage);
 
-                File file = fileChooser.showOpenDialog(primaryStage);
-                if (file != null) {
-                    openFile(file);
+                File temp = fileChooser.showOpenDialog(primaryStage);
+                if(temp!=null)
+                {
+                    file = temp;
+                    loadFile(primaryStage);
                 }
-                
             }
         });
         globalRow.getChildren().add(loadall);
@@ -597,13 +617,29 @@ public class Adventure extends Application {
         });
 
             
-        IDfield.setEditable(false);
+//        IDfield.setEditable(false);
 
         sceneList.get(currentIndex).ID = Integer.toString(currentIndex + 1);
         
     }
     
-    private void saveFile(File file)
+    private void saveButton(Stage primaryStage)
+    {
+        saveScene(); //first update the values in memory for the current scene!
+                
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save Story");
+
+        FileChooser.ExtensionFilter extFilter = new FileChooser.ExtensionFilter("Story File (*.story)", "*.story");
+        fileChooser.getExtensionFilters().add(extFilter);
+
+        file = fileChooser.showSaveDialog(primaryStage);
+
+        saveFile();
+    }
+    
+    
+    private void saveFile() //File file)
     {
         /* FileOutputStream f = null;
         try { f = new FileOutputStream(file); }
@@ -618,11 +654,11 @@ public class Adventure extends Application {
         
             writer.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
             writer.write("<story>\n");
-            writer.write("<settings>");
-            writer.write("<connection>" + toggleValue + "</connection>");
-            writer.write("</settings>\n");
+//            writer.write("<settings>");
+//            writer.write("<connectby>" + toggleValue + "</connectby>");
+//            writer.write("</settings>\n");
 
-            writer.write("<scenelist length=\"" + Integer.toString(sceneList.size()) + "\">\n");
+//            writer.write("<scenelist length=\"" + Integer.toString(sceneList.size()) + "\">\n");
             
             int sceneIndex = -1;
             for(StoryScene current: sceneList)
@@ -631,11 +667,11 @@ public class Adventure extends Application {
 
                 writer.write("\n    <scene index=\"" + Integer.toString(sceneIndex) + "\">");
                 writer.write("<ID>" + current.ID + "</ID>");
-                writer.write("<text>" + current.text + "</text>");
+                writer.write("<text><![CDATA[" + current.text + "]]></text>");
                 
                 if(current.childScenes.size() != 0)
                 {
-                    writer.write("<childscenes>");
+                    //writer.write("<childscenes>");
                     
                     Iterator< Entry<String,Integer> > itr = current.childScenes.entrySet().iterator();
                     
@@ -649,11 +685,11 @@ public class Adventure extends Application {
                         writer.write("<childIndex>" + Integer.toString(childIndex) + "</childIndex>");
                         writer.write("</link>");
                     }          
-                    writer.write("</childscenes>");                    
+                    //writer.write("</childscenes>");                    
                 }
                 writer.write("</scene>\n");
             }
-            writer.write("</scenelist>\n");            
+//            writer.write("</scenelist>\n");            
             writer.write("</story>");
             
             
@@ -667,11 +703,13 @@ public class Adventure extends Application {
 }
 
     
-    private void openFile(File file) {
+    private void loadFile(Stage primaryStage) {
 
-      if(file!=null)
-      {
-        try{
+//      if(file!=null) //we already tested in for null in the handle in Start().
+//      {
+        try {
+
+            /*
             InputStream is = new FileInputStream(file);
             BufferedReader buf = new BufferedReader(new InputStreamReader(is));
             String line = buf.readLine();
@@ -679,12 +717,46 @@ public class Adventure extends Application {
             while(line != null)
                 { sb.append(line).append("\n");
                 line = buf.readLine(); } 
-            String fileAsString = sb.toString();
-            System.out.println("Contents : " + fileAsString);
-        } 
-        catch(IOException ex2) { System.out.println( "IOException" ); }
-      }
+            //String fileAsString = sb.toString();
+            //System.out.println("Contents : " + fileAsString);
+            */
+            
+            SAXReader reader = new SAXReader();
+            Document document = reader.read(file);
+            
+            //Element classElement = document.getRootElement();
+            
+            //reset the scene list
+            sceneList = new ArrayList<StoryScene>();
+            
+            List<Node> nodes = document.selectNodes("/story/scene");
+            
+            for (Node node : nodes) {
+                StoryScene nextscene = new StoryScene();
+                nextscene.ID = node.selectSingleNode("ID").getText();
+                
+                String sceneText = node.selectSingleNode("text").asXML();
+                
+                nextscene.text = sceneText.substring(15, sceneText.length() - 10);
+                
+                List<Node> childScenes = node.selectNodes("./link");
+                
+                for(Node child: childScenes)
+                {
+                    nextscene.addChild(child.selectSingleNode("actionstring").getText(), Integer.parseInt(child.selectSingleNode("childIndex").getText()) );
+                }
+                sceneList.add(nextscene);
+            }
+            
+            //load the first scene in the list.
+            currentIndex = 0;
+            IDfield.setText(sceneList.get(0).ID );
+            textEditor.setHtmlText(sceneList.get(0).text);                        
+            setChildArea(primaryStage);
 
+        } catch (DocumentException ex) {
+            Logger.getLogger(Adventure.class.getName()).log(Level.SEVERE, null, ex); }
+//      }
     }
 
     public void setChildArea(Stage primaryStage)
@@ -706,15 +778,15 @@ public class Adventure extends Application {
             
 //            childList.add( Integer.toString(childIndex) + " " + sceneList.get(index).text.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", " ") );
             
-            if(toggleValue == "#")
-            {
-                childList.add( Integer.toString(childIndex + 1) + " : " +  key );
-            }
-            else if(toggleValue == "ID")
-            {
+//            if(toggleValue == "#")
+//            {
+//                childList.add( Integer.toString(childIndex + 1) + " : " +  key );
+//            }
+//            else if(toggleValue == "ID")
+//           {
 //                childList.add( Integer.toString(childIndex + 1) + " : " + sceneList.get(entry.getValue()).ID );
                 childList.add( sceneList.get(childIndex).ID +  " : " + key );
-            }
+//            }
         }
     }
     
@@ -749,12 +821,12 @@ public class Adventure extends Application {
         grid.add(new Label("Action Text:"), 0, 0);
         grid.add(action, 1, 0);
 
-        if(toggleValue == "ID")
-        {
+//        if(toggleValue == "ID")
+//        {
             grid.add(new Label("Scene ID:"), 0, 1);
             grid.add(sceneID,1,1);
             sceneID.setText(sceneList.get(sceneList.get(currentIndex).childScenes.get( childSelection ) ).ID );            
-        }
+//        }
 
         grid.add(new Label("Scene Number:"), 0, 2);
         grid.add(sceneNumber, 1, 2);
@@ -768,7 +840,7 @@ public class Adventure extends Application {
         
         
         // Enable/Disable login button depending on whether a username was entered.
-        Node loginButton = dialog.getDialogPane().lookupButton(submitButton);
+        javafx.scene.Node loginButton = dialog.getDialogPane().lookupButton(submitButton);
         loginButton.setDisable(true);
 
         // Do some validation (using the Java 8 lambda syntax).
@@ -946,17 +1018,18 @@ public class Adventure extends Application {
 	            final String oldvalue, final String newvalue) 
 	    {
                 int sceneNumber=-1;
+                /*
                 if(toggleValue=="#")
                 {
                     List<String> myList = new ArrayList<String>(Arrays.asList(newvalue.split(" ")));
                     sceneNumber = Integer.parseInt(myList.get(0)) - 1;
                 }
                 else if(toggleValue=="ID")
-                {
+                {*/
                     int stopSpot = newvalue.indexOf(":") - 1;
                     String ID = newvalue.substring(0, stopSpot);
                     sceneNumber = findListIndex(ID);
-                }
+//                }
                 loadButton(sceneNumber,primaryStage);                
                 selection.value = sceneNumber;
             }});
@@ -973,14 +1046,15 @@ public class Adventure extends Application {
         
         for (int index = 0; index < sceneList.size(); index++) {
 
+            /*
             if(toggleValue == "#")
             {
                 listOfScenes.add( Integer.toString(index + 1) + " : " + sceneList.get(index).text.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", " ") );
             }
             else if(toggleValue == "ID")
-            {
+            {*/
                 listOfScenes.add( sceneList.get(index).ID + " : " + sceneList.get(index).text.replaceAll("(?s)<[^>]*>(\\s*<[^>]*>)*", " ") );
-            }
+            //}
         }
         
         border.setCenter(sceneChooser);

@@ -8,7 +8,9 @@
   </information>
   <resources>
     <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
-    <jar href="Adventure.jar" size="25531" download="eager" />
+    <jar href="Adventure.jar" size="26192" download="eager" />
+    <jar href="lib\dom4j-1.6.1.jar" size="313898" download="eager" />
+    <jar href="lib\jaxen-1.2.0-atlassian-2.jar" size="231953" download="eager" />
   </resources>
   <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="Adventure" >
     <param name="requiredFXVersion" value="8.0+"/>

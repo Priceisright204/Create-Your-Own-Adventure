@@ -333,11 +333,35 @@ public class Adventure extends Application {
         Button loadBtn = new Button("Load Scene");
         loadBtn.setOnAction(e -> selectScene(primaryStage, "load") );
         buttonRow1.getChildren().add(loadBtn);
+                
+        //DELETE SCENE
+        Button deleteBtn = new Button("Delete Scene");
+        deleteBtn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+              if(sceneList.size()!=1)
+              {
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Delete Scene");
+                alert.setHeaderText(null);
+                alert.setContentText("Are you sure?");
+
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.get() == ButtonType.OK){
+                    // ... user chose OK
+                    sceneList.remove(currentIndex);
+                    if(currentIndex >= sceneList.size())
+                    {   currentIndex--;   }
+                        IDfield.setText(sceneList.get(currentIndex).ID );
+                        textEditor.setHtmlText(sceneList.get(currentIndex).text);                        
+                        setChildArea(primaryStage);
+                }
+              }
+            }});
+        buttonRow1.getChildren().add(deleteBtn);
         
         upperRight.getChildren().add(buttonRow1);
-        
-        
-        
+
         
         //Empty Row
         Text emptySpace = TextBuilder.create().text("   ").build();
@@ -498,6 +522,49 @@ public class Adventure extends Application {
         
         upperRight.getChildren().add(globalRow);
         
+        //Empty Row
+        Text emptySpace2 = TextBuilder.create().text("   ").build();
+        upperRight.getChildren().add(emptySpace2);
+        
+        //CREATE EMPTY STORY
+        Button newStory = new Button("Create Empty Story");
+        newStory.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+              if(sceneList.size()!=1)
+              {
+                Alert alert = new Alert(AlertType.CONFIRMATION);
+                alert.setTitle("Create Empty Story");
+                alert.setHeaderText(null);
+                alert.setContentText("Save current story?");
+
+                ButtonType buttonYes = new ButtonType("Yes");
+                ButtonType buttonNo = new ButtonType("No");
+                ButtonType buttonCancel = new ButtonType("Cancel", ButtonData.CANCEL_CLOSE);
+
+                alert.getButtonTypes().setAll(buttonYes, buttonNo, buttonCancel);
+                
+                Optional<ButtonType> result = alert.showAndWait();
+                if (result.get() == buttonYes){
+                    // ... user chose Yes
+                    if(file == null)
+                    {  saveButton(primaryStage); }
+                    else
+                    {  saveFile(); }
+                }
+                if (result.get() == buttonYes || result.get() == buttonNo)
+                {
+                    sceneList = new ArrayList<StoryScene>();
+                    currentIndex = 0;
+                    StoryScene newScene = new StoryScene();
+                    sceneList.add(newScene);
+                    IDfield.setText("");
+                    textEditor.setHtmlText("");
+                }
+              }
+            }});
+        upperRight.getChildren().add(newStory);
+        
         //Empty Space
         VBox Vgrowbox = new VBox();
         VBox.setVgrow(Vgrowbox, Priority.ALWAYS);
@@ -575,19 +642,6 @@ public class Adventure extends Application {
 //        upperRight.getChildren().add(childGrid);
 
         
-        
-        
-        /*
-        final Text lowerRight = TextBuilder.create()
-            .text("Lower Right")
-            .x(100)
-            .y(50)
-             .fill(Color.RED)
-            .font(Font.font(null, FontWeight.BOLD, 35))
-            .translateY(50)
-            .build();
-        rightArea.getChildren().add(lowerRight);
-        */
 
         splitPane2.getItems().add(upperRight);
         splitPane2.getItems().add(lowerRight);
